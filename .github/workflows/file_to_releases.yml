@@ -1,0 +1,32 @@
+name: Download and Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'File URL'
+        required: true
+      filename:
+        description: 'Release name/tag'
+        required: true
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download file
+        run: |
+          wget -O "${{ github.event.inputs.filename }}" \
+            "${{ github.event.inputs.url }}"
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.filename }}
+          files: ${{ github.event.inputs.filename }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
