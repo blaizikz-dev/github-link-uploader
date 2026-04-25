@@ -1,0 +1,30 @@
+name: Fetch and Store File
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to download'
+        required: true
+        type: string
+      filename:
+        description: 'Output filename'
+        required: true
+        type: string
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download file
+        run: |
+          wget --timeout=300 --tries=5 \
+            -O "${{ github.event.inputs.filename }}" \
+            "${{ github.event.inputs.url }}"
+      
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.filename }}
+          path: ${{ github.event.inputs.filename }}
+          retention-days: 1
