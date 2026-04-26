@@ -1,0 +1,83 @@
+name: Download from Commit & Save to Repo
+on:
+  push:
+    branches:
+      - "**"
+jobs:
+  save-file:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install aria2
+        run: sudo apt-get install -y aria2
+
+      - name: Extract URLs and download files
+        run: |
+          MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $MSG"
+
+          if echo "$MSG" | grep -qP 'download-zip:'; then
+            MODE="zip"
+            URL_LINE=$(echo "$MSG" | grep -oP 'download-zip:\s*\K.*')
+          elif echo "$MSG" | grep -qP 'download:'; then
+            MODE="normal"
+            URL_LINE=$(echo "$MSG" | grep -oP 'download:\s*\K.*')
+          else
+            echo "❌ No download command found in commit message"
+            exit 1
+          fi
+
+          echo "Mode: $MODE"
+          mkdir -p downloads tmp_downloads
+          cd tmp_downloads
+
+          for URL in $URL_LINE; do
+            FILENAME=$(basename "$URL")
+            echo "⬇️ Downloading $URL -> $FILENAME"
+
+            aria2c \
+              --split=2 \
+              --max-connection-per-server=2 \
+              --min-split-size=90M \
+              . \
+              "$URL"
+          done
+
+          if [ "$MODE" = "zip" ]; then
+            # Create a single archive
+            ARCHIVE_NAME="archive_$(date +%Y%m%d_%H%M%S).zip"
+            zip -r "$ARCHIVE_NAME" .
+            
+            # Split if needed (over 100MB)
+            for FILE in *.zip; do
+              [ -f "$FILE" ] || continue
+              SIZE=$(stat -c%s "$FILE")
+              if [ "$SIZE" -gt 95000000 ]; then  # 95MB to stay under GitHub's 100MB limit
+                echo "File is $(( SIZE / 1024 / 1024 ))MB, splitting with git-lfs or alternative method"
+                # Use split command (creates .aa, .ab, etc. files)
+                split -b 90M "$FILE" "${FILE}.part."
+                rm "$FILE"
+              fi
+            done
+          fi
+
+          cd ..
+          # Move all files (including split parts) to downloads
+          cp -r tmp_downloads/* downloads/ 2>/dev/null || true
+          rm -rf tmp_downloads
+
+      - name: Commit & Push
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add downloads/
+          git commit -m "Add downloaded files from commit [skip ci]" || echo "Nothing to commit"
+          echo "🚀 Pushing to branch: $BRANCH"
+          git push origin HEAD:$BRANCH
