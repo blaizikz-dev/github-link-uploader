@@ -34,8 +34,8 @@ jobs:
           fi
 
           echo "Mode: $MODE"
-          mkdir -p downloads tmp_downloads
-          cd tmp_downloads
+          mkdir -p downloads
+          cd downloads
 
           for URL in $URL_LINE; do
             FILENAME=$(basename "$URL")
@@ -47,30 +47,28 @@ jobs:
               --min-split-size=90M \
               . \
               "$URL"
+            
+            # Check if file exceeds GitHub limit (95MB to be safe)
+            if [ -f "$FILENAME" ]; then
+              SIZE=$(stat -c%s "$FILENAME")
+              if [ "$SIZE" -gt 95000000 ]; then
+                echo "⚠️ File exceeds GitHub limit, splitting with split command"
+                # Split using standard split command (creates .aa, .ab, etc.)
+                split -b 90M "$FILENAME" "${FILENAME}.part."
+                rm "$FILENAME"
+                
+                # Create recombination script
+                cat > "recombine_${FILENAME}.sh" << EOF
+#!/bin/bash
+# To recombine this file, run:
+cat ${FILENAME}.part.* > ${FILENAME}
+EOF
+                chmod +x "recombine_${FILENAME}.sh"
+              fi
+            fi
           done
 
-          if [ "$MODE" = "zip" ]; then
-            # Create a single archive
-            ARCHIVE_NAME="archive_$(date +%Y%m%d_%H%M%S).zip"
-            zip -r "$ARCHIVE_NAME" .
-            
-            # Split if needed (over 100MB)
-            for FILE in *.zip; do
-              [ -f "$FILE" ] || continue
-              SIZE=$(stat -c%s "$FILE")
-              if [ "$SIZE" -gt 95000000 ]; then  # 95MB to stay under GitHub's 100MB limit
-                echo "File is $(( SIZE / 1024 / 1024 ))MB, splitting with git-lfs or alternative method"
-                # Use split command (creates .aa, .ab, etc. files)
-                split -b 90M "$FILE" "${FILE}.part."
-                rm "$FILE"
-              fi
-            done
-          fi
-
           cd ..
-          # Move all files (including split parts) to downloads
-          cp -r tmp_downloads/* downloads/ 2>/dev/null || true
-          rm -rf tmp_downloads
 
       - name: Commit & Push
         run: |
@@ -79,5 +77,4 @@ jobs:
           git config user.email "github-actions@github.com"
           git add downloads/
           git commit -m "Add downloaded files from commit [skip ci]" || echo "Nothing to commit"
-          echo "🚀 Pushing to branch: $BRANCH"
           git push origin HEAD:$BRANCH
