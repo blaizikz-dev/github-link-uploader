@@ -59,22 +59,3 @@ jobs:
                 
                 # Create recombination script
                 cat > "recombine_${FILENAME}.sh" << EOF
-#!/bin/bash
-# To recombine this file, run:
-cat ${FILENAME}.part.* > ${FILENAME}
-EOF
-                chmod +x "recombine_${FILENAME}.sh"
-              fi
-            fi
-          done
-
-          cd ..
-
-      - name: Commit & Push
-        run: |
-          BRANCH="${GITHUB_REF_NAME}"
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add downloads/
-          git commit -m "Add downloaded files from commit [skip ci]" || echo "Nothing to commit"
-          git push origin HEAD:$BRANCH
