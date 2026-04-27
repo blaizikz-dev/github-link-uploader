@@ -1,4 +1,4 @@
-name: Fetch and Store File
+name: Fetch and Store File to Repository
 
 on:
   workflow_dispatch:
