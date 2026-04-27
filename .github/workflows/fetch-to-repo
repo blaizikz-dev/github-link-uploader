@@ -1,0 +1,34 @@
+name: Fetch and Store File
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL to download'
+        required: true
+        type: string
+      filename:
+        description: 'Output filename'
+        required: true
+        type: string
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Download file
+        run: |
+          wget --timeout=300 --tries=5 \
+            -O "${{ github.event.inputs.filename }}" \
+            "${{ github.event.inputs.url }}"
+      
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "${{ github.event.inputs.filename }}"
+          git commit -m "Add ${{ github.event.inputs.filename }}"
+          git push
