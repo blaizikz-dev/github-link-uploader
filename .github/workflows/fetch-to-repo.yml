@@ -1,4 +1,4 @@
-name: Fetch and Store File to Repository
+name: Fetch and Store File with LFS
 
 on:
   workflow_dispatch:
@@ -18,17 +18,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true  # This enables LFS in the action
       
-      - name: Download file
+      - name: Install Git LFS (if needed)
         run: |
-          wget --timeout=300 --tries=5 \
-            -O "${{ github.event.inputs.filename }}" \
+          git lfs install
+          git lfs track "*.tar.gz"
+          git add .gitattributes
+      
+      - name: Download file with aria2 (faster)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y aria2
+          aria2c -x 16 -s 16 -k 2M \
+            -o "${{ github.event.inputs.filename }}" \
             "${{ github.event.inputs.url }}"
       
-      - name: Commit and push
+      - name: Commit and push with LFS
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add "${{ github.event.inputs.filename }}"
           git commit -m "Add ${{ github.event.inputs.filename }}"
-          git push
+          git push origin master
