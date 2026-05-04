@@ -13,8 +13,16 @@ jobs:
           sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
           echo "root:temppass123" | sudo chpasswd
           sudo service ssh start
-          echo "SSH server ready"
-          # Get public IP
+          echo "========================================="
+          echo "SSH server is ready!"
+          echo "Runner Public IP:"
           curl -s ifconfig.me
+          echo ""
+          echo "Runner Hostname:"
+          hostname -I
+          echo "========================================="
+          echo "Use this command to connect:"
+          echo "ssh -D 1080 -N -f root@<IP_ADDRESS>"
+          echo "========================================="
           # Keep alive for 1 hour
           sleep 3600
