@@ -1,4 +1,5 @@
 # file-downloader
+- Update May 4th: only the third method works now.
 ## GitHub Download Proxy
 
 Download large files through GitHub's infrastructure. Perfect for bypassing download restrictions or unreliable connections.
@@ -12,6 +13,12 @@ Download large files through GitHub's infrastructure. Perfect for bypassing down
 - **Best for**: One-time downloads
 
 ### Method 2: GitHub Releases (Permanent)
+- **Workflow**: `fetch-release.yml`
+- **Max size**: Unlimited
+- **Retention**: Forever
+- **Best for**: Files you need to keep or share
+
+### Method 3: GitHub Repository (Permanent)
 - **Workflow**: `fetch-release.yml`
 - **Max size**: Unlimited
 - **Retention**: Forever
@@ -39,6 +46,16 @@ Download large files through GitHub's infrastructure. Perfect for bypassing down
 4. Click **"Run workflow"**
 5. Go to **Releases** (right sidebar) to download
 
+### Method 3: Download as a repository file (Permanent)
+1. Go to **Actions** → **"Fetch and Store Files with LFS "**
+2. Click **"Run workflow"**
+3. Enter:
+   - **URL**: The file download link
+   - **Tag**: Version tag (e.g., `hadoop-3.3.6`)
+   - **Filename**: Desired name (e.g., `hadoop-3.3.6.tar.gz`)
+4. Click **"Run workflow"**
+5. Go to **Code** and the repository files to download
+
 ## Example Usage
 
 ```
@@ -46,15 +63,6 @@ URL: https://archive.apache.org/dist/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar
 Filename: hadoop-3.3.6.tar.gz
 Tag: hadoop-3.3.6
 ```
-
-## Important Notes
-
-- **Method 1** artifacts expire (default: 1 day)
-- **Method 2** releases are permanent and shareable
-- Default timeout: 10 minutes (adjust in workflow)
-- Ensure the repository is public for artifact access
-- Check `Settings → Actions → General → Workflow permissions` is set to **"Read and write"**
-
 ## Troubleshooting
 
 ### "Artifacts not showing"
@@ -77,7 +85,8 @@ Tag: hadoop-3.3.6
 ```
 .github/workflows/
 ├── fetch-artifact.yml    # Method 1: Temporary artifact download
-└── fetch-release.yml      # Method 2: Permanent release download
+└── fetch-release.yml     # Method 2: Permanent release download
+└── fetch-repo.yml        # Method 3: Permanent to files 
 ```
 
 ## Privacy
