@@ -1,0 +1,20 @@
+name: Temporary Proxy Server
+
+on: workflow_dispatch
+
+jobs:
+  proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH tunnel server
+        run: |
+          sudo apt-get update && sudo apt-get install -y openssh-server
+          sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          echo "root:temppass123" | sudo chpasswd
+          sudo service ssh start
+          echo "SSH server ready"
+          # Get public IP
+          curl -s ifconfig.me
+          # Keep alive for 1 hour
+          sleep 3600
